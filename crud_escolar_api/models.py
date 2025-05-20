@@ -66,6 +66,8 @@ class Eventos(models.Model):
     horaFin = models.TimeField(max_length=20, null=True)
     lugar = models.CharField(max_length=255, null=True)
     responsable = models.CharField(max_length=255, null=True, blank=True)
+    responsable_user_id = models.IntegerField(null=True, blank=True)
+    responsable_rol = models.CharField(max_length=32, null=True, blank=True)
     publico_json = models.TextField(null=True, blank=True)
     programa_educativo = models.CharField(max_length=255, null=True, blank=True)
     descripcion_breve = models.TextField(max_length=300, null=True, blank=True)

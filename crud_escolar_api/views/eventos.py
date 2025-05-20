@@ -61,26 +61,7 @@ class EventosView(generics.CreateAPIView):
         except Exception:
             evento["publico_json"] = []
 
-        # Buscar ID del responsable (si es string y necesitas ID)
-        nombre_resp = evento_obj.responsable.strip()
-        evento["responsable_id"] = None
-
-        if nombre_resp:
-            partes = nombre_resp.split(" ")
-            if len(partes) >= 2:
-                nombre = partes[0]
-                apellido = partes[1]
-
-                maestro = Maestros.objects.filter(user__first_name=nombre, user__last_name=apellido).first()
-                if maestro:
-                    evento["responsable_id"] = maestro.id
-                else:
-                    admin = Administradores.objects.filter(user__first_name=nombre, user__last_name=apellido).first()
-                    if admin:
-                        evento["responsable_id"] = admin.id
-
         return Response(evento, 200)
-
 
     #Registrar nuevo evento
     @transaction.atomic
@@ -89,17 +70,21 @@ class EventosView(generics.CreateAPIView):
         if isinstance(data.get("publico_json"), list):
             data["publico_json"] = json.dumps(data["publico_json"])
 
-        responsable_id = data.get("responsable")
+        responsable_user_id = data.get("responsable_user_id")
+        responsable_rol = data.get("responsable_rol")
         nombre_responsable = ""
-        maestro = Maestros.objects.filter(id=responsable_id).first()
-        if maestro:
-            nombre_responsable = f"{maestro.user.first_name} {maestro.user.last_name}"
-        else:
-            admin = Administradores.objects.filter(id=responsable_id).first()
+
+        if responsable_rol == "Maestro":
+            maestro = Maestros.objects.filter(user_id=responsable_user_id).first()
+            if maestro:
+                nombre_responsable = f"{maestro.user.first_name} {maestro.user.last_name}"
+        elif responsable_rol == "Administrador":
+            admin = Administradores.objects.filter(user_id=responsable_user_id).first()
             if admin:
                 nombre_responsable = f"{admin.user.first_name} {admin.user.last_name}"
         data["responsable"] = nombre_responsable
-
+        data["responsable_user_id"] = responsable_user_id
+        data["responsable_rol"] = responsable_rol
 
         even = EventosSerializer(data=data)
         if even.is_valid():
@@ -118,16 +103,22 @@ class EventosViewEdit(generics.CreateAPIView):
         evento.horaInicio = request.data["horaInicio"]
         evento.horaFin = request.data["horaFin"]
         evento.lugar = request.data["lugar"]
-        responsable_id = request.data["responsable"]
+        responsable_user_id = request.data.get("responsable_user_id")
+        responsable_rol = request.data.get("responsable_rol")
         nombre_responsable = ""
-        maestro = Maestros.objects.filter(id=responsable_id).first()
-        if maestro:
-            nombre_responsable = f"{maestro.user.first_name} {maestro.user.last_name}"
-        else:
-            admin = Administradores.objects.filter(id=responsable_id).first()
+
+        if responsable_rol == "Maestro":
+            maestro = Maestros.objects.filter(user_id=responsable_user_id).first()
+            if maestro:
+                nombre_responsable = f"{maestro.user.first_name} {maestro.user.last_name}"
+        elif responsable_rol == "Administrador":
+            admin = Administradores.objects.filter(user_id=responsable_user_id).first()
             if admin:
                 nombre_responsable = f"{admin.user.first_name} {admin.user.last_name}"
+
         evento.responsable = nombre_responsable
+        evento.responsable_user_id = responsable_user_id
+        evento.responsable_rol = responsable_rol
         evento.publico_json = json.dumps(request.data["publico_json"])
         evento.programa_educativo = request.data["programa_educativo"]
         evento.descripcion_breve = request.data["descripcion_breve"]
